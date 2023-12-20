@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: jSerialComm-2.7.0.jar
+Main-Class: com.mpi.wildlab.serialmonitor.Main
+
