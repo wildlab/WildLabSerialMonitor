@@ -119,6 +119,8 @@ public class Main {
                 (codePoint == '=') ||
                 (codePoint == '%') ||
                 (codePoint == '@') ||
+                (codePoint == '>') ||
+                (codePoint == '<') ||
                 (codePoint == '?')
                 ;
     }
