@@ -17,8 +17,8 @@ public class Main {
         Log.dNoLog("--- SELECT YOUR TAG:");
         Log.dNoLog("\t[ 0 ] DOWNLOAD DATA FROM FLEATAG (PLEASE CONNECT PROGRAMMINGBOARD VIA USB FIRST)");
         Log.dNoLog("\t[ 1 ] TINYFOX DEBUGGING");
-        //Log.dNoLog("\t[ 1 ] WildFi tag serial monitor");
-        //Log.dNoLog("\t[ 1 ] WildFi gateway serial monitor");
+        Log.dNoLog("\t[ 2 ] WILDFI GATEWAY SERIAL MONITOR");
+        Log.dNoLog("\t[ 3 ] WILDFI TAG SERIAL MONITOR");
         Log.dNoLog("\t[ 7 ] GENERIC SERIAL MONITOR, 9600 BAUD");
         Log.dNoLog("\t[ 8 ] GENERIC SERIAL MONITOR, 115200 BAUD");
         Log.dNoLog("\t[ 9 ] EXIT");
@@ -121,6 +121,8 @@ public class Main {
                 (codePoint == '@') ||
                 (codePoint == '>') ||
                 (codePoint == '<') ||
+                (codePoint == '|') ||
+                (codePoint == '\'') ||
                 (codePoint == '?')
                 ;
     }
@@ -181,6 +183,131 @@ public class Main {
 
     public static void endPort() {
         if(activePort != null) activePort.closePort();
+    }
+
+    public static void wildFiGatewayCommandList() {
+        Log.dNoLog("--- COMMAND LIST:");
+        Log.dNoLog("----- GATEWAY_FOR_MOVEMENT_LOGGER:");
+        Log.dNoLog("------- n: COMMAND_BYTE_NOTHING");
+        Log.dNoLog("------- f: COMMAND_BYTE_FORCE_TRACKING");
+        Log.dNoLog("------- a: COMMAND_BYTE_ACTIVATE");
+        Log.dNoLog("------- d: COMMAND_BYTE_DEACTIVATE");
+        Log.dNoLog("------- c: COMMAND_BYTE_CHANGE_CONFIG");
+        Log.dNoLog("------- m: COMMAND_BYTE_MAG_CALIBRATION");
+        Log.dNoLog("------- s: COMMAND_BYTE_DO_NOT_SEND");
+        Log.dNoLog("------- t: COMMAND_BYTE_TIME_RESYNC");
+        Log.dNoLog("------- w: COMMAND_BYTE_TIME_SYNC_ACTIVATION");
+        Log.dNoLog("------- x: COMMAND_BYTE_ACTIVATE_WHEN_NO_GW");
+        Log.dNoLog("----- GATEWAY_FOR_PROXIMITY_DETECTION:");
+        Log.dNoLog("------- n: PROXIMITY_COMMAND_NOTHING");
+        Log.dNoLog("------- s: PROXIMITY_COMMAND_DO_NOT_SEND");
+        Log.dNoLog("------- a: PROXIMITY_COMMAND_ACTIVATE");
+        Log.dNoLog("------- d: PROXIMITY_COMMAND_DEACTIVATE");
+        Log.dNoLog("------- c: PROXIMITY_COMMAND_CHANGE_CONFIG");
+        Log.dNoLog("------- r: PROXIMITY_COMMAND_FULL_RESET");
+        Log.dNoLog("------- m: PROXIMITY_COMMAND_MAG_CALIB");
+        Log.dNoLog("------- w: PROXIMITY_COMMAND_RESYNC_TIME_BY_WIFI");
+        Log.dNoLog("------- 2: PROXIMITY_COMMAND_ACTIVATE_AT_06_00");
+        Log.dNoLog("------- 3: PROXIMITY_COMMAND_ACTIVATE_AT_12_00");
+        Log.dNoLog("------- 4: PROXIMITY_COMMAND_ACTIVATE_AT_15_00");
+        Log.dNoLog("------- 5: PROXIMITY_COMMAND_ACTIVATE_AT_20_00");
+        Log.dNoLog("------- f: PROXIMITY_COMMAND_FIRST_SYNC_TIME_IN_ACTIVATION");
+        Log.dNoLog("----- GENERAL GATEWAY COMMANDS:");
+        Log.dNoLog("------- 0: RESET GATEWAY");
+        Log.dNoLog("------- q: STOP GATEWAY");
+        Log.dNoLog("------- 1: AUTO COMMAND CHANGE TO NOTHING");
+        Log.dNoLog("------- 9: SILENT MODE");
+    }
+
+    public static void wildFiGateway() {
+        showAllPorts();
+        Log.dNoLog("--- AUTO CONNECTING TO WILDFI GATEWAY");
+        int i = 0;
+        for(SerialPort port : ports) {
+            if(port.getDescriptivePortName().contains("CH340")) {
+                Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
+                if(startPort(i, 115200, true)) {
+                    Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
+                    Log.dNoLog("--- PRESS 'b' PLUS ENTER TO SHOW COMMAND MENUE, PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
+
+                    while(true) {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                        String line = "";
+                        try {
+                            line = br.readLine();
+                        } catch(Exception e) { }
+                        if(line.equals("9")) { break; }
+                        else if(line.equals("b")) {
+                            wildFiGatewayCommandList();
+                        }
+                        else {
+                            if(line.length() > 0) {
+                                //line = line + "\n\r";
+                                activePort.writeBytes(line.getBytes(), line.length());
+                            }
+                        }
+                    }
+
+                    endPort();
+                    Log.dNoLog("--- PORT CLOSED!");
+                    return;
+                }
+                else {
+                    endPort();
+                    Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
+                    return;
+                }
+            }
+            i++;
+        }
+        Log.dNoLog("--- ERROR, WILDFI GATEWAY (CH340), ARE YOU SURE IT IS CONNECTED?");
+    }
+
+    public static void wildFi() {
+        showAllPorts();
+        Log.dNoLog("--- AUTO CONNECTING TO WILDFI TAG");
+        int i = 0;
+        for(SerialPort port : ports) {
+            if(port.getPortDescription().contains("CP2102N") || port.getDescriptivePortName().contains("CP210")) {
+                Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
+                if(startPort(i, 115200, true)) {
+                    Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
+                    Log.dNoLog("--- PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
+
+                    while(true) {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                        String line = "";
+                        try {
+                            line = br.readLine();
+                        } catch(Exception e) { }
+                        if(line.equals("9")) { break; }
+                        else if(line.equals("w")) {
+                            if(line.length() > 0) {
+                                //line = line + "\n\r";
+                                activePort.writeBytes(line.getBytes(), line.length());
+                            }
+                        }
+                        else {
+                            if(line.length() > 0) {
+                                line = line + "\n\r";
+                                activePort.writeBytes(line.getBytes(), line.length());
+                            }
+                        }
+                    }
+
+                    endPort();
+                    Log.dNoLog("--- PORT CLOSED!");
+                    return;
+                }
+                else {
+                    endPort();
+                    Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
+                    return;
+                }
+            }
+            i++;
+        }
+        Log.dNoLog("--- ERROR, WILDFI GATEWAY (CH340), ARE YOU SURE IT IS CONNECTED?");
     }
 
     public static void fleaTag() {
@@ -269,6 +396,12 @@ public class Main {
             } else if (mode == 1) {
                 Log.init("TinyFoxDebugging.txt");
                 genericSerialMonitor(9600, true, false);
+            } else if (mode == 2) {
+                Log.init("WildFiGatewayLog.txt");
+                wildFiGateway();
+            } else if (mode == 3) {
+                Log.init("WildFiTagLog.txt");
+                wildFi();
             } else if(mode == 7) {
                 Log.init("SerialMonitorLog9600.txt");
                 genericSerialMonitor(9600, true, true);
