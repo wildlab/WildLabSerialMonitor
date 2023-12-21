@@ -16,6 +16,7 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         Log.dNoLog("--- SELECT YOUR TAG:");
         Log.dNoLog("\t[ 0 ] DOWNLOAD DATA FROM FLEATAG (PLEASE CONNECT PROGRAMMINGBOARD VIA USB FIRST)");
+        Log.dNoLog("\t[ 1 ] TINYFOX DEBUGGING");
         //Log.dNoLog("\t[ 1 ] WildFi tag serial monitor");
         //Log.dNoLog("\t[ 1 ] WildFi gateway serial monitor");
         Log.dNoLog("\t[ 7 ] GENERIC SERIAL MONITOR, 9600 BAUD");
@@ -219,19 +220,27 @@ public class Main {
         Log.dNoLog("--- ERROR, PROGRAMMINGBOARD NOT FOUND, ARE YOU SURE IT IS CONNECTED?");
     }
 
-    public static void genericSerialMonitor(int baud) {
+    public static void genericSerialMonitor(int baud, boolean onlyAllowedChars, boolean inputActivated) {
         int selectedPort = showAndSelectPort();
         if(selectedPort >= 0) {
-            if(startPort(selectedPort, baud, true)) {
+            if(startPort(selectedPort, baud, onlyAllowedChars)) {
                 Log.dNoLog("--- SUCCESSFULLY CONNECTED! LISTENING NOW! PRESS '9' PLUS ENTER TO QUIT AND STORE DATA.");
 
                 while(true) {
                     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                    int j = 0;
+                    String line = "";
                     try {
-                        j = Integer.parseInt(br.readLine());
+                        line = br.readLine();
                     } catch(Exception e) { }
-                    if(j == 9) { break; }
+                    if(line.equals("9")) { break; }
+                    else {
+                        if(line.length() > 0) {
+                            if(inputActivated) {
+                                line = line + "\n\r";
+                                activePort.writeBytes(line.getBytes(), line.length());
+                            }
+                        }
+                    }
                 }
 
                 endPort();
@@ -255,12 +264,15 @@ public class Main {
             if (mode == 0) {
                 Log.init("FleaTagData.txt");
                 fleaTag();
+            } else if (mode == 1) {
+                Log.init("TinyFoxDebugging.txt");
+                genericSerialMonitor(9600, true, false);
             } else if(mode == 7) {
                 Log.init("SerialMonitorLog9600.txt");
-                genericSerialMonitor(9600);
+                genericSerialMonitor(9600, true, true);
             } else if(mode == 8) {
                 Log.init("SerialMonitorLog115200.txt");
-                genericSerialMonitor(115200);
+                genericSerialMonitor(115200, true, true);
             } else {
                 break;
             }
