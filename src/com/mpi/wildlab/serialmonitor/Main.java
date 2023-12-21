@@ -15,18 +15,20 @@ public class Main {
     public static int modeSelect() {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         Log.dNoLog("--- SELECT YOUR TAG:");
-        Log.dNoLog("\t[ 0 ] Download data from FleaTag (please connect ProgrammingBoard to a USB port first)");
+        Log.dNoLog("\t[ 0 ] DOWNLOAD DATA FROM FLEATAG (PLEASE CONNECT PROGRAMMINGBOARD VIA USB FIRST)");
         //Log.dNoLog("\t[ 1 ] WildFi tag serial monitor");
         //Log.dNoLog("\t[ 1 ] WildFi gateway serial monitor");
-        Log.dNoLog("\t[ 9 ] Exit");
+        Log.dNoLog("\t[ 7 ] GENERIC SERIAL MONITOR, 9600 BAUD");
+        Log.dNoLog("\t[ 8 ] GENERIC SERIAL MONITOR, 115200 BAUD");
+        Log.dNoLog("\t[ 9 ] EXIT");
 
-        Log.dNoLog("--> Enter selection: ");
+        Log.dNoLog("--> ENTER SELECTION AND PRESS ENTER: ");
         int i = 0;
         try {
             i = Integer.parseInt(br.readLine());
         } catch(Exception e) {
-            Log.dNoLog("Invalid Format! Assuming you want to decode data.");
-            return 0;
+            Log.dNoLog("--- INVALID FORMAT");
+            return -1;
         }
         return i;
     }
@@ -40,6 +42,42 @@ public class Main {
             i++;
         }
         return i;
+    }
+
+    public static int showAndSelectPort() {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        int i = 0;
+        int selected = 0;
+        Log.dNoLog("--- AVAILABLE COM PORTS:");
+        ports = SerialPort.getCommPorts();
+        for(SerialPort port : ports) {
+            Log.dNoLog("\t[ " + i + " ] " + port.getDescriptivePortName() + " / " + port.getPortDescription());
+            i++;
+        }
+
+        if(i == 0) {
+            Log.dNoLog("--- NO COM PORTS FOUND, DID YOU CONNECT YOUR DEVICE?");
+            return -1;
+        }
+
+        Log.dNoLog("--> ENTER SELECTION AND PRESS ENTER: ");
+        try {
+            selected = Integer.parseInt(br.readLine());
+        } catch(Exception e) {
+            Log.dNoLog("--- INVALID FORMAT");
+            return -1;
+        }
+
+        if(selected >= i) {
+            Log.dNoLog("--- INVALID INPUT");
+            return -1;
+        }
+        if(selected < 0) {
+            Log.dNoLog("--- INVALID INPUT");
+            return -1;
+        }
+
+        return selected;
     }
 
     public static void deleteEmptyTxtFiles() {
@@ -153,7 +191,7 @@ public class Main {
                     Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
                     Log.dNoLog("--- ATTACH FLEATAG TO CLAMP (MIND ORIENTATION), THEN PRESS DOWNLOAD BUTTON FOR A FEW SECONDS UNTIL FLEATAG STARTS TO BLINK");
                     Log.dNoLog("--- NOTE: DOWNLOAD BUTTON WILL NOT WORK IF TAG IS DISCHARGED (WAIT A BIT UNTIL CHARGED)");
-                    Log.dNoLog("--- NOTE: PRESS '0' PLUS ENTER TO QUIT AND STORE DATA");
+                    Log.dNoLog("--- NOTE: PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
                     Log.dNoLog("--- ... WAITING FOR TAG DATA ...");
 
                     while(true) {
@@ -162,7 +200,7 @@ public class Main {
                         try {
                             j = Integer.parseInt(br.readLine());
                         } catch(Exception e) { }
-                        if(j == 0) { break; }
+                        if(j == 9) { break; }
                     }
 
                     endPort();
@@ -181,6 +219,31 @@ public class Main {
         Log.dNoLog("--- ERROR, PROGRAMMINGBOARD NOT FOUND, ARE YOU SURE IT IS CONNECTED?");
     }
 
+    public static void genericSerialMonitor(int baud) {
+        int selectedPort = showAndSelectPort();
+        if(selectedPort >= 0) {
+            if(startPort(selectedPort, baud, true)) {
+                Log.dNoLog("--- SUCCESSFULLY CONNECTED! LISTENING NOW! PRESS '9' PLUS ENTER TO QUIT AND STORE DATA.");
+
+                while(true) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                    int j = 0;
+                    try {
+                        j = Integer.parseInt(br.readLine());
+                    } catch(Exception e) { }
+                    if(j == 9) { break; }
+                }
+
+                endPort();
+                Log.dNoLog("--- PORT CLOSED!");
+            }
+            else {
+                endPort();
+                Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
+            }
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         Log.dNoLog("-------------------------------------------------");
         Log.dNoLog("--- WILD LAB SERIAL MONITOR V"+SOFTWARE_VERSION+" ---");
@@ -192,6 +255,12 @@ public class Main {
             if (mode == 0) {
                 Log.init("FleaTagData.txt");
                 fleaTag();
+            } else if(mode == 7) {
+                Log.init("SerialMonitorLog9600.txt");
+                genericSerialMonitor(9600);
+            } else if(mode == 8) {
+                Log.init("SerialMonitorLog115200.txt");
+                genericSerialMonitor(115200);
             } else {
                 break;
             }
