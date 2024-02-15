@@ -8,9 +8,10 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-    public static String SOFTWARE_VERSION ="1.0";
+    public static String SOFTWARE_VERSION = "1.1";
     static SerialPort activePort;
     static SerialPort[] ports = SerialPort.getCommPorts();
+    public static String EXIT_STRING = "exit";
 
     public static int modeSelect() {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -19,6 +20,7 @@ public class Main {
         Log.dNoLog("\t[ 1 ] TINYFOX DEBUGGING");
         Log.dNoLog("\t[ 2 ] WILDFI GATEWAY SERIAL MONITOR");
         Log.dNoLog("\t[ 3 ] WILDFI TAG SERIAL MONITOR");
+        Log.dNoLog("\t[ 4 ] TICKTAG SERIAL MONITOR");
         Log.dNoLog("\t[ 7 ] GENERIC SERIAL MONITOR, 9600 BAUD");
         Log.dNoLog("\t[ 8 ] GENERIC SERIAL MONITOR, 115200 BAUD");
         Log.dNoLog("\t[ 9 ] EXIT");
@@ -122,6 +124,7 @@ public class Main {
                 (codePoint == '>') ||
                 (codePoint == '<') ||
                 (codePoint == '|') ||
+                (codePoint == ';') ||
                 (codePoint == '\'') ||
                 (codePoint == '?')
                 ;
@@ -228,7 +231,7 @@ public class Main {
                 Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
                 if(startPort(i, 115200, true)) {
                     Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
-                    Log.dNoLog("--- PRESS 'b' PLUS ENTER TO SHOW COMMAND MENUE, PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
+                    Log.dNoLog("--- TYPE 'b' PLUS ENTER TO SHOW COMMAND MENUE, TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
 
                     while(true) {
                         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -236,7 +239,7 @@ public class Main {
                         try {
                             line = br.readLine();
                         } catch(Exception e) { }
-                        if(line.equals("9")) { break; }
+                        if(line.equals(EXIT_STRING)) { break; }
                         else if(line.equals("b")) {
                             wildFiGatewayCommandList();
                         }
@@ -272,7 +275,7 @@ public class Main {
                 Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
                 if(startPort(i, 115200, true)) {
                     Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
-                    Log.dNoLog("--- PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
+                    Log.dNoLog("--- TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
 
                     while(true) {
                         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -280,7 +283,7 @@ public class Main {
                         try {
                             line = br.readLine();
                         } catch(Exception e) { }
-                        if(line.equals("9")) { break; }
+                        if(line.equals(EXIT_STRING)) { break; }
                         else if(line.equals("w")) {
                             if(line.length() > 0) {
                                 //line = line + "\n\r";
@@ -321,16 +324,61 @@ public class Main {
                     Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
                     Log.dNoLog("--- ATTACH FLEATAG TO CLAMP (MIND ORIENTATION), THEN PRESS DOWNLOAD BUTTON FOR A FEW SECONDS UNTIL FLEATAG STARTS TO BLINK");
                     Log.dNoLog("--- NOTE: DOWNLOAD BUTTON WILL NOT WORK IF TAG IS DISCHARGED (WAIT A BIT UNTIL CHARGED)");
-                    Log.dNoLog("--- NOTE: PRESS '9' PLUS ENTER TO QUIT AND STORE DATA");
+                    Log.dNoLog("--- NOTE: TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
                     Log.dNoLog("--- ... WAITING FOR TAG DATA ...");
 
                     while(true) {
                         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                        int j = 0;
+                        String line = "";
                         try {
-                            j = Integer.parseInt(br.readLine());
+                            line = br.readLine();
                         } catch(Exception e) { }
-                        if(j == 9) { break; }
+                        if(line.equals(EXIT_STRING)) { break; }
+                    }
+
+                    endPort();
+                    Log.dNoLog("--- PORT CLOSED!");
+
+                    return;
+                }
+                else {
+                    endPort();
+                    Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
+                    return;
+                }
+            }
+            i++;
+        }
+        Log.dNoLog("--- ERROR, PROGRAMMINGBOARD NOT FOUND, ARE YOU SURE IT IS CONNECTED?");
+    }
+
+    public static void tickTag() {
+        showAllPorts();
+        Log.dNoLog("--- AUTO CONNECTING TO PROGRAMMING BOARD");
+        int i = 0;
+        for(SerialPort port : ports) {
+            if(port.getPortDescription().contains("CP2102N") || port.getDescriptivePortName().contains("CP210")) {
+                Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
+                if(startPort(i, 9600, true)) {
+                    Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
+                    //Log.dNoLog("--- ATTACH FLEATAG TO CLAMP (MIND ORIENTATION), THEN PRESS DOWNLOAD BUTTON FOR A FEW SECONDS UNTIL FLEATAG STARTS TO BLINK");
+                    //Log.dNoLog("--- NOTE: DOWNLOAD BUTTON WILL NOT WORK IF TAG IS DISCHARGED (WAIT A BIT UNTIL CHARGED)");
+                    Log.dNoLog("--- NOTE: TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
+                    Log.dNoLog("--- ... WAITING FOR TAG DATA (PRESS BUTTON ON UIB TO ENTER MENUE) ...");
+
+                    while(true) {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                        String line = "";
+                        try {
+                            line = br.readLine();
+                        } catch(Exception e) { }
+                        if(line.equals(EXIT_STRING)) { break; }
+                        else {
+                            if(line.length() > 0) {
+                                line = line + "\n\r";
+                                activePort.writeBytes(line.getBytes(), line.length());
+                            }
+                        }
                     }
 
                     endPort();
@@ -351,9 +399,11 @@ public class Main {
 
     public static void genericSerialMonitor(int baud, boolean onlyAllowedChars, boolean inputActivated) {
         int selectedPort = showAndSelectPort();
+        boolean doLineBreak = true;
         if(selectedPort >= 0) {
             if(startPort(selectedPort, baud, onlyAllowedChars)) {
-                Log.dNoLog("--- SUCCESSFULLY CONNECTED! LISTENING NOW! PRESS '9' PLUS ENTER TO QUIT AND STORE DATA.");
+                Log.dNoLog("--- SUCCESSFULLY CONNECTED! LISTENING NOW! TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA.");
+                Log.dNoLog("--- TYPE 'lb' PLUS ENTER TO TOGGLE APPENDING LINE BREAKS");
 
                 while(true) {
                     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -361,11 +411,15 @@ public class Main {
                     try {
                         line = br.readLine();
                     } catch(Exception e) { }
-                    if(line.equals("9")) { break; }
+                    if(line.equals(EXIT_STRING)) { break; }
+                    if(line.equals("lb")) {
+                        doLineBreak = !doLineBreak;
+                        Log.dNoLog("--- LINE BREAKS: " + doLineBreak);
+                    }
                     else {
                         if(line.length() > 0) {
                             if(inputActivated) {
-                                line = line + "\n\r";
+                                if(doLineBreak) line = line + "\n\r";
                                 activePort.writeBytes(line.getBytes(), line.length());
                             }
                         }
@@ -402,6 +456,9 @@ public class Main {
             } else if (mode == 3) {
                 Log.init("WildFiTagLog.txt");
                 wildFi();
+            } else if (mode == 4) {
+                Log.init("TickTagLog.txt");
+                tickTag();
             } else if(mode == 7) {
                 Log.init("SerialMonitorLog9600.txt");
                 genericSerialMonitor(9600, true, true);
