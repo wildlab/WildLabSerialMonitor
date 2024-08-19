@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-    public static String SOFTWARE_VERSION = "1.1";
+    public static String SOFTWARE_VERSION = "1.2";
     static SerialPort activePort;
     static SerialPort[] ports = SerialPort.getCommPorts();
     public static String EXIT_STRING = "exit";
@@ -223,47 +223,40 @@ public class Main {
     }
 
     public static void wildFiGateway() {
-        showAllPorts();
-        Log.dNoLog("--- AUTO CONNECTING TO WILDFI GATEWAY");
-        int i = 0;
-        for(SerialPort port : ports) {
-            if(port.getDescriptivePortName().contains("CH340")) {
-                Log.dNoLog("--- USING " + i + ": " + port.getDescriptivePortName() + " / " + port.getPortDescription());
-                if(startPort(i, 115200, true)) {
-                    Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
-                    Log.dNoLog("--- TYPE 'b' PLUS ENTER TO SHOW COMMAND MENUE, TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
+        int selectedPort = showAndSelectPort();
+        if(selectedPort >= 0) {
+            if (startPort(selectedPort, 115200, true)) {
+                Log.dNoLog("--- SUCCESSFULLY CONNECTED!");
+                Log.dNoLog("--- TYPE 'b' PLUS ENTER TO SHOW COMMAND MENUE, TYPE '" + EXIT_STRING + "' PLUS ENTER TO QUIT AND STORE DATA");
 
-                    while(true) {
-                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                        String line = "";
-                        try {
-                            line = br.readLine();
-                        } catch(Exception e) { }
-                        if(line.equals(EXIT_STRING)) { break; }
-                        else if(line.equals("b")) {
-                            wildFiGatewayCommandList();
-                        }
-                        else {
-                            if(line.length() > 0) {
-                                //line = line + "\n\r";
-                                activePort.writeBytes(line.getBytes(), line.length());
-                            }
+                while (true) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                    String line = "";
+                    try {
+                        line = br.readLine();
+                    } catch (Exception e) {
+                    }
+                    if (line.equals(EXIT_STRING)) {
+                        break;
+                    } else if (line.equals("b")) {
+                        wildFiGatewayCommandList();
+                    } else {
+                        if (line.length() > 0) {
+                            //line = line + "\n\r";
+                            activePort.writeBytes(line.getBytes(), line.length());
                         }
                     }
+                }
 
-                    endPort();
-                    Log.dNoLog("--- PORT CLOSED!");
-                    return;
-                }
-                else {
-                    endPort();
-                    Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
-                    return;
-                }
+                endPort();
+                Log.dNoLog("--- PORT CLOSED!");
+                return;
+            } else {
+                endPort();
+                Log.dNoLog("--- ERROR, COULD NOT CONNECT, TRY RE-PLUG USB");
+                return;
             }
-            i++;
         }
-        Log.dNoLog("--- ERROR, WILDFI GATEWAY (CH340), ARE YOU SURE IT IS CONNECTED?");
     }
 
     public static void wildFi() {
@@ -310,7 +303,7 @@ public class Main {
             }
             i++;
         }
-        Log.dNoLog("--- ERROR, WILDFI GATEWAY (CH340), ARE YOU SURE IT IS CONNECTED?");
+        Log.dNoLog("--- ERROR, WILDFI PROGRAMMING BOARD NOT FOUND, ARE YOU SURE IT IS CONNECTED?");
     }
 
     public static void fleaTag() {
